@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, jsonify
+from flask import Flask, render_template, request, send_file
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.arima.model import ARIMA
@@ -68,35 +68,35 @@ def generate_dynamic_forecast(data, forecast_period):
         except:
             # Fallback to simple exponential smoothing
             alpha = 0.3
-            smoothed = [data[0]]
+            smoothed = [data.iloc[0]]
             for i in range(1, len(data)):
-                smoothed.append(alpha * data[i] + (1 - alpha) * smoothed[i-1])
+                smoothed.append(alpha * data.iloc[i] + (1 - alpha) * smoothed[i-1])
             forecast = np.array([smoothed[-1]] * forecast_period)
             if len(data) >= 6:
-                recent_trend = (data[-1] - data[-6]) / 6
+                recent_trend = (data.iloc[-1] - data.iloc[-6]) / 6
                 for i in range(forecast_period):
                     forecast[i] += recent_trend * (i + 1)
             return forecast
     
     # Generate forecast using the best model
     if best_model is not None:
-        forecast = best_model.forecast(steps=forecast_period)
+        forecast = best_model.forecast(steps=forecast_period).values.copy()
         # Add some randomness and a diminishing trend effect for realism
         trend = 0
         if len(data) >= 6:
-            trend = (data[-1] - data[-6]) / 6
+            trend = (data.iloc[-1] - data.iloc[-6]) / 6
         std_dev = data.tail(12).std() * 0.2
         noise = np.random.normal(0, std_dev, forecast_period)
         for i in range(forecast_period):
             forecast[i] += noise[i] + (trend * i * 0.5)
         forecast = np.maximum(forecast, 0)
-        return forecast.values
+        return forecast
     else:
         return np.array([data.mean()] * forecast_period)
 
 def filter_by_time_frame(df, time_frame):
     """Filter dataframe based on selected time frame"""
-    today = datetime.now()
+    today = pd.Timestamp.now()
     if time_frame == 'all' or time_frame is None:
         return df
     elif time_frame == '1week':
@@ -171,18 +171,14 @@ def index():
                 if len(df) == 0:
                     return render_template('index.html', error=f"No data available for selected time frame.")
                 
-                df['Date'] = df['Date'].dt.to_period('M').dt.to_timestamp('M')
-                if df['Date'].dt.day.nunique() > 1:
-                    data = df.set_index('Date')['Sales'].resample('ME').sum()
-                else:
-                    data = pd.Series(df['Sales'].values, index=df['Date'])
+                df['Date'] = df['Date'].dt.to_period('M').dt.to_timestamp('M') + pd.offsets.MonthEnd(0)
+                data = df.groupby('Date')['Sales'].sum()
+                data = data.sort_index()
                 
                 profit_data = None
                 if 'Profit' in df.columns:
-                    if df['Date'].dt.day.nunique() > 1:
-                        profit_data = df.set_index('Date')['Profit'].resample('ME').sum()
-                    else:
-                        profit_data = pd.Series(df['Profit'].values, index=df['Date'])
+                    profit_data = df.groupby('Date')['Profit'].sum()
+                    profit_data = profit_data.sort_index()
             else:
                 np.random.seed(42)
                 dates = pd.date_range(start='2024-01-01', periods=60, freq='ME')
@@ -234,7 +230,7 @@ def index():
                     ax.pie([total_sales, total_profit], labels=['Total Sales', 'Total Profit'], 
                            autopct='%1.1f%%', colors=['blue', 'green'])
                 else:
-                    monthly_data = data.resample('ME').sum() if not isinstance(data.index, pd.DatetimeIndex) else data
+                    monthly_data = data.resample('ME').sum() if isinstance(data.index, pd.DatetimeIndex) else data
                     ax.pie(monthly_data, labels=[d.strftime('%b %Y') for d in monthly_data.index], 
                            autopct='%1.1f%%')
                 ax.axis('equal')
