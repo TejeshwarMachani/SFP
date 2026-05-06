@@ -171,21 +171,21 @@ def index():
                 if len(df) == 0:
                     return render_template('index.html', error=f"No data available for selected time frame.")
                 
-                df['Date'] = df['Date'].dt.to_period('M').dt.to_timestamp('M')
+                df['Date'] = df['Date'].dt.to_period('M').dt.to_timestamp('ME')
                 if df['Date'].dt.day.nunique() > 1:
-                    data = df.set_index('Date')['Sales'].resample('M').sum()
+                    data = df.set_index('Date')['Sales'].resample('ME').sum()
                 else:
                     data = pd.Series(df['Sales'].values, index=df['Date'])
                 
                 profit_data = None
                 if 'Profit' in df.columns:
                     if df['Date'].dt.day.nunique() > 1:
-                        profit_data = df.set_index('Date')['Profit'].resample('M').sum()
+                        profit_data = df.set_index('Date')['Profit'].resample('ME').sum()
                     else:
                         profit_data = pd.Series(df['Profit'].values, index=df['Date'])
             else:
                 np.random.seed(42)
-                dates = pd.date_range(start='2024-01-01', periods=60, freq='M')
+                dates = pd.date_range(start='2024-01-01', periods=60, freq='ME')
                 trend = np.linspace(1000, 2000, 60)
                 seasonal = 200 * np.sin(np.linspace(0, 10*np.pi, 60))
                 noise = np.random.normal(0, 50, 60)
@@ -206,7 +206,7 @@ def index():
 
             forecast = generate_dynamic_forecast(data, forecast_period)
             forecast_index = pd.date_range(start=data.index[-1] + pd.offsets.MonthEnd(1),
-                                           periods=forecast_period, freq='M')
+                                           periods=forecast_period, freq='ME')
             forecast_df = pd.DataFrame({'Month': forecast_index, 'Forecast': forecast})
             forecast_df['Month'] = forecast_df['Month'].dt.strftime('%b %Y')
             forecast_list = forecast_df.to_dict('records')
@@ -234,7 +234,7 @@ def index():
                     ax.pie([total_sales, total_profit], labels=['Total Sales', 'Total Profit'], 
                            autopct='%1.1f%%', colors=['blue', 'green'])
                 else:
-                    monthly_data = data.resample('M').sum() if not isinstance(data.index, pd.DatetimeIndex) else data
+                    monthly_data = data.resample('ME').sum() if not isinstance(data.index, pd.DatetimeIndex) else data
                     ax.pie(monthly_data, labels=[d.strftime('%b %Y') for d in monthly_data.index], 
                            autopct='%1.1f%%')
                 ax.axis('equal')
@@ -277,7 +277,7 @@ def index():
 @app.route('/download_sample')
 def download_sample():
     np.random.seed(42)
-    dates = pd.date_range(start='2024-01-01', periods=60, freq='M')
+    dates = pd.date_range(start='2024-01-01', periods=60, freq='ME')
     trend = np.linspace(1000, 2000, 60)
     seasonal = 200 * np.sin(np.linspace(0, 10*np.pi, 60))
     noise = np.random.normal(0, 50, 60)
