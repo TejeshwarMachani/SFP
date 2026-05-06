@@ -5,3 +5,4 @@ statsmodels==0.14.0
 matplotlib==3.7.1
 openpyxl==3.1.2
 xlsxwriter==3.2.0
+gunicorn==21.2.0
