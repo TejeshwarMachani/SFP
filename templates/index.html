@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Forecast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="app-header">
+            <h1 class="mb-3"><i class="fas fa-chart-line me-2"></i>Sales Forecast Analysis</h1>
+            <p class="text-muted">Upload your sales data and get accurate forecasts with beautiful visualizations</p>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+        </div>
+        {% endif %}
+
+        <div class="card mb-4 main-card">
+            <div class="card-header">
+                <h5><i class="fas fa-upload me-2"></i>Upload Data & Configure Analysis</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="data_file" class="form-label">Upload Excel File</label>
+                            <div class="input-group">
+                                <input type="file" name="data_file" class="form-control" id="data_file">
+                                <button class="btn btn-outline-secondary" type="button" id="file-info-btn"
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="File should contain columns: Date, Sales, Buying_Price, Selling_Price">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Excel file with Date and Sales columns required
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2 mt-4">
+                                <a href="/download_sample" class="btn btn-outline-secondary">
+                                    <i class="fas fa-download me-2"></i>Download Sample File
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label for="buying_price" class="form-label">Buying Price Column</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                <input type="text" name="buying_price" class="form-control" id="buying_price"
+                                    placeholder="Buying_Price">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="selling_price" class="form-label">Selling Price Column</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                <input type="text" name="selling_price" class="form-control" id="selling_price"
+                                    placeholder="Selling_Price">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="forecast_period" class="form-label">Forecast Period (months)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                <input type="number" name="forecast_period" class="form-control" id="forecast_period"
+                                    value="12" min="1" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="chart_type" class="form-label">Chart Type</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-chart-bar"></i></span>
+                                <select name="chart_type" id="chart_type" class="form-select">
+                                    <option value="line">Line Chart</option>
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="time_frame" class="form-label">Time Frame</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                                <select name="time_frame" id="time_frame" class="form-select">
+                                    <option value="all">All Data</option>
+                                    <option value="1week">Last Week</option>
+                                    <option value="1month">Last Month</option>
+                                    <option value="3months">Last 3 Months</option>
+                                    <option value="6months">Last 6 Months</option>
+                                    <option value="1year">Last Year</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-magic me-2"></i>Generate Forecast
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card instruction-card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>How It Works</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Quick Start Guide</h6>
+                        <ol>
+                            <li>Upload an Excel file with your sales data</li>
+                            <li>Specify column names if different from defaults</li>
+                            <li>Select your preferred chart type and time frame</li>
+                            <li>Set forecast period (how many months ahead)</li>
+                            <li>Click "Generate Forecast" to see results</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Features</h6>
+                        <ul>
+                            <li>ARIMA time-series forecasting algorithm</li>
+                            <li>Multiple visualization options</li>
+                            <li>Profit calculation and analysis</li>
+                            <li>Downloadable forecast results</li>
+                            <li>Sample data available for demonstration</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-lightbulb me-2"></i>If you don't upload a file, the system will use sample data for
+                    demonstration purposes.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer mt-5 py-3 bg-light">
+        <div class="container text-center">
+            <p class="text-muted mb-0">Sales Forecast Analysis Tool &copy; 2025</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+
+        // File input label update
+        document.getElementById('data_file').addEventListener('change', function (e) {
+            const fileName = e.target.files[0]?.name || 'No file chosen';
+            document.getElementById('file-info-btn').setAttribute('title', `Selected file: ${fileName}`);
+        });
+    </script>
+</body>
+
+</html>
