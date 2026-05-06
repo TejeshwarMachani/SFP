@@ -129,7 +129,12 @@ def index():
             # Process uploaded file or use sample data
             if 'data_file' in request.files and request.files['data_file'].filename != '':
                 file = request.files['data_file']
-                df = pd.read_excel(file)
+                filename = file.filename.lower()
+                file_bytes = file.read()
+                if filename.endswith('.csv'):
+                    df = pd.read_csv(io.BytesIO(file_bytes))
+                else:
+                    df = pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
                 required_columns = ['Date', 'Sales']
                 if 'buying_price' in request.form and 'selling_price' in request.form and request.form['buying_price'] and request.form['selling_price']:
                     buying_price_column = request.form['buying_price']
