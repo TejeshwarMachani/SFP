@@ -171,7 +171,7 @@ def index():
                 if len(df) == 0:
                     return render_template('index.html', error=f"No data available for selected time frame.")
                 
-                df['Date'] = df['Date'].dt.to_period('M').dt.to_timestamp('ME')
+                df['Date'] = df['Date'].dt.to_period('M').dt.to_timestamp('M')
                 if df['Date'].dt.day.nunique() > 1:
                     data = df.set_index('Date')['Sales'].resample('ME').sum()
                 else:
