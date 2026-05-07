@@ -1,4 +1,6 @@
-from flask import Flask, render_template, request, send_file
+import os
+from functools import wraps
+from flask import Flask, render_template, request, send_file, session, redirect, url_for, flash
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.arima.model import ARIMA
@@ -15,6 +17,33 @@ import warnings
 warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'insight-verge-super-secret-key')
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username == 'admin' and password == 'password':
+            session['logged_in'] = True
+            return redirect(url_for('index'))
+        else:
+            error = 'Invalid credentials. Please try again.'
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('login'))
 
 def generate_dynamic_forecast(data, forecast_period):
     """
@@ -114,6 +143,7 @@ def filter_by_time_frame(df, time_frame):
     return df[df['Date'] >= start_date]
 
 @app.route('/', methods=['GET', 'POST'])
+@login_required
 def index():
     if request.method == 'POST':
         try:
@@ -271,6 +301,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/download_sample')
+@login_required
 def download_sample():
     np.random.seed(42)
     dates = pd.date_range(start='2024-01-01', periods=60, freq='ME')
@@ -298,6 +329,7 @@ def download_sample():
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 @app.route('/download_forecast_excel', methods=['POST'])
+@login_required
 def download_forecast_excel():
     data_str = request.form.get('forecast_data', '')
     try:
@@ -317,6 +349,7 @@ def download_forecast_excel():
     )
 
 @app.route('/download_data_excel', methods=['POST'])
+@login_required
 def download_data_excel():
     data_str = request.form.get('data_json', '')
     try:
@@ -340,6 +373,7 @@ def download_data_excel():
         return f"Error generating download: {e}"
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
 # if __name__ == '__main__':
 #     app.run(debug=True)
